@@ -121,7 +121,7 @@ public class MultiStateView extends FrameLayout {
     }
 
     /**
-     * Adds the given view as content, throwing an {@link IllegalStateException} if a content view is already set (this layout can only have on direct
+     * Adds the given view as content, throwing an {@link IllegalStateException} if a content view is already set (this layout can only have one direct
      * descendant)
      *
      * @param contentView
