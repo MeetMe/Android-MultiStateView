@@ -94,7 +94,13 @@ public class MultiStateView extends FrameLayout {
 
         switch (getState()) {
             case LOADING:
-                contentView.setVisibility(View.GONE);
+                contentView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        // Only change visibility after other UI tasks have been performed
+                        contentView.setVisibility(View.GONE);
+                    }
+                });
                 getLoadingView().setVisibility(View.VISIBLE);
                 break;
 
