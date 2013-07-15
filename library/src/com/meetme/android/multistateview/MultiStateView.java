@@ -2,6 +2,7 @@ package com.meetme.android.multistateview;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -49,8 +50,8 @@ public class MultiStateView extends FrameLayout {
 
         try {
             setLoadingLayoutResourceId(a.getResourceId(R.styleable.MultiStateView_msvLoadingLayout, R.layout.msv__loading));
-            setErrorUnknownLayoutResourceId(a.getResourceId(R.styleable.MultiStateView_msvErrorUnknownLayout, R.layout.msv__error_unknown));
-            setErrorNetworkLayoutResourceId(a.getResourceId(R.styleable.MultiStateView_msvErrorNetworkLayout, R.layout.msv__error_network));
+            setGeneralErrorLayoutResourceId(a.getResourceId(R.styleable.MultiStateView_msvErrorUnknownLayout, R.layout.msv__error_unknown));
+            setNetworkErrorLayoutResourceId(a.getResourceId(R.styleable.MultiStateView_msvErrorNetworkLayout, R.layout.msv__error_network));
 
             String tmpString;
 
@@ -60,7 +61,7 @@ public class MultiStateView extends FrameLayout {
                 tmpString = context.getString(R.string.error_title_network);
             }
 
-            setErrorNetworkTitleString(tmpString);
+            setNetworkErrorTitleString(tmpString);
 
             tmpString = a.getString(R.styleable.MultiStateView_msvErrorTitleUnknownStringId);
 
@@ -68,7 +69,7 @@ public class MultiStateView extends FrameLayout {
                 tmpString = context.getString(R.string.error_title_unknown);
             }
 
-            setErrorUnknownTitleString(tmpString);
+            setGeneralErrorTitleString(tmpString);
 
             tmpString = a.getString(R.styleable.MultiStateView_msvErrorTapToRetryStringId);
 
@@ -84,15 +85,15 @@ public class MultiStateView extends FrameLayout {
         }
     }
 
-    private void setErrorNetworkLayoutResourceId(int resourceId) {
+    private void setNetworkErrorLayoutResourceId(int resourceId) {
         mViewState.networkErrorLayoutResId = resourceId;
     }
 
-    private void setErrorUnknownLayoutResourceId(int resourceId) {
+    private void setGeneralErrorLayoutResourceId(int resourceId) {
         mViewState.generalErrorLayoutResId = resourceId;
     }
 
-    private void setErrorNetworkTitleString(String string) {
+    private void setNetworkErrorTitleString(String string) {
         mViewState.networkErrorTitleString = string;
     }
 
@@ -100,7 +101,7 @@ public class MultiStateView extends FrameLayout {
         return mViewState.networkErrorTitleString;
     }
 
-    private void setErrorUnknownTitleString(String string) {
+    private void setGeneralErrorTitleString(String string) {
         mViewState.generalErrorTitleString = string;
     }
 
@@ -327,6 +328,42 @@ public class MultiStateView extends FrameLayout {
     }
 
     @Override
+    protected Parcelable onSaveInstanceState() {
+        Parcelable state = super.onSaveInstanceState();
+
+        SavedState myState = new SavedState(state);
+
+        myState.state = mViewState;
+
+        return myState;
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Parcelable state) {
+        if (!(state instanceof SavedState)) {
+            super.onRestoreInstanceState(state);
+            return;
+        }
+
+        SavedState myState = (SavedState) state;
+
+        setViewState(myState.state);
+
+        super.onRestoreInstanceState(myState.getSuperState());
+    }
+
+    private void setViewState(MultiStateViewData state) {
+        setState(state.state);
+        setTapToRetryString(state.tapToRetryString);
+        setGeneralErrorTitleString(state.generalErrorTitleString);
+        setNetworkErrorTitleString(state.networkErrorTitleString);
+        setGeneralErrorLayoutResourceId(state.generalErrorLayoutResId);
+        setNetworkErrorLayoutResourceId(state.networkErrorLayoutResId);
+        setLoadingLayoutResourceId(state.loadingLayoutResId);
+        setCustomErrorString(state.customErrorString);
+    }
+
+    @Override
     public void addView(View child) {
         if (!isViewInternal(child)) {
             addContentView(child);
@@ -422,7 +459,36 @@ public class MultiStateView extends FrameLayout {
         }
     }
 
-    public static class MultiStateViewData {
+    public static class SavedState extends View.BaseSavedState {
+        MultiStateViewData state;
+
+        public SavedState(Parcelable superState) {
+            super(superState);
+        }
+
+        private SavedState(Parcel in) {
+            super(in);
+            state = in.readParcelable(null);
+        }
+
+        @Override
+        public void writeToParcel(Parcel out, int flags) {
+            super.writeToParcel(out, flags);
+            out.writeParcelable(state, 0);
+        }
+
+        public static final Parcelable.Creator<SavedState> CREATOR = new Parcelable.Creator<SavedState>() {
+            public SavedState createFromParcel(Parcel in) {
+                return new SavedState(in);
+            }
+
+            public SavedState[] newArray(int size) {
+                return new SavedState[size];
+            }
+        };
+    }
+
+    public static class MultiStateViewData implements Parcelable {
         public String customErrorString;
         public int loadingLayoutResId;
         public int generalErrorLayoutResId;
@@ -432,8 +498,44 @@ public class MultiStateView extends FrameLayout {
         public String tapToRetryString;
         public ContentState state;
 
-        public MultiStateViewData(ContentState mState) {
-            this.state = mState;
+        public MultiStateViewData(ContentState contentState) {
+            state = contentState;
         }
+
+        private MultiStateViewData(Parcel in) {
+            customErrorString = in.readString();
+            loadingLayoutResId = in.readInt();
+            generalErrorLayoutResId = in.readInt();
+            networkErrorLayoutResId = in.readInt();
+            networkErrorTitleString = in.readString();
+            generalErrorTitleString = in.readString();
+            tapToRetryString = in.readString();
+            state = ContentState.valueOf(in.readString());
+        }
+
+        public int describeContents() {
+            return 0;
+        }
+
+        public void writeToParcel(Parcel dest, int flags) {
+            dest.writeString(customErrorString);
+            dest.writeInt(loadingLayoutResId);
+            dest.writeInt(generalErrorLayoutResId);
+            dest.writeInt(networkErrorLayoutResId);
+            dest.writeString(networkErrorTitleString);
+            dest.writeString(generalErrorTitleString);
+            dest.writeString(tapToRetryString);
+            dest.writeString(state.name());
+        }
+
+        public static final Parcelable.Creator<MultiStateViewData> CREATOR = new Parcelable.Creator<MultiStateViewData>() {
+            public MultiStateViewData createFromParcel(Parcel in) {
+                return new MultiStateViewData(in);
+            }
+
+            public MultiStateViewData[] newArray(int size) {
+                return new MultiStateViewData[size];
+            }
+        };
     }
 }
