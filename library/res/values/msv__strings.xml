@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="error_title_network">Network Error</string>
+    <string name="error_title_unknown">Oops! We messed up.</string>
+    <string name="tap_to_retry">Tap to retry</string>
+
+</resources>

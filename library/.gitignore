@@ -1,0 +1,10 @@
+bin
+gen
+*.apk
+*.keystore
+.hg/
+local.properties
+*.DS_Store
+*.BridgeSort
+out/
+tmp/

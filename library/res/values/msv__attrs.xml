@@ -8,8 +8,19 @@
             <enum name="content" value="0x00" />
             <!-- The state is to show loading indication -->
             <enum name="loading" value="0x01" />
+            <!-- The state is to show loading indication -->
+            <enum name="error_network" value="0x02" />
+            <!-- The state is to show loading indication -->
+            <enum name="error_unknown" value="0x03" />
         </attr>
+
         <attr name="msvLoadingLayout" format="reference" />
+        <attr name="msvErrorUnknownLayout" format="reference" />
+        <attr name="msvErrorNetworkLayout" format="reference" />
+
+        <attr name="msvErrorTitleUnknownStringId" format="string" />
+        <attr name="msvErrorTitleNetworkStringId" format="string" />
+        <attr name="msvErrorTapToRetryStringId" format="string" />
     </declare-styleable>
 
 </resources>
