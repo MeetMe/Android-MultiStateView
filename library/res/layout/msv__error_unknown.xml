@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:clickable="true"
+    android:descendantFocusability="beforeDescendants"
     android:gravity="center"
     android:orientation="vertical"
     android:padding="10dp" >
@@ -23,14 +24,17 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:text="@string/error_title_unknown"
+        android:textColor="#333"
         android:textSize="18sp"
         android:textStyle="bold" />
 
-    <TextView
+    <Button
         android:id="@+id/tap_to_retry"
+        style="@style/Button.Retry"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:gravity="center"
+        android:clickable="false"
+        android:duplicateParentState="true"
         android:text="@string/tap_to_retry" />
 
 </LinearLayout>
