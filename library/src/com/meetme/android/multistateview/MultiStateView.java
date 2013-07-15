@@ -38,12 +38,6 @@ public class MultiStateView extends FrameLayout {
         parseAttrs(context, attrs);
     }
 
-    @Override
-    protected Parcelable onSaveInstanceState() {
-
-        return super.onSaveInstanceState();
-    }
-
     /**
      * Parses the incoming attributes from XML inflation
      *
