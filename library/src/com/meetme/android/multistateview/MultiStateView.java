@@ -468,13 +468,13 @@ public class MultiStateView extends FrameLayout {
 
         private SavedState(Parcel in) {
             super(in);
-            state = in.readParcelable(null);
+            state = (MultiStateViewData) in.readParcelable(MultiStateViewData.class.getClassLoader());
         }
 
         @Override
         public void writeToParcel(Parcel out, int flags) {
             super.writeToParcel(out, flags);
-            out.writeParcelable(state, 0);
+            out.writeParcelable(state, flags);
         }
 
         public static final Parcelable.Creator<SavedState> CREATOR = new Parcelable.Creator<SavedState>() {
