@@ -37,6 +37,8 @@ public class MultiStateView extends FrameLayout {
 
     public MultiStateView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        // Start out with a default handler/looper
+        mHandler = new MultiStateHandler();
         parseAttrs(context, attrs);
     }
 
@@ -362,13 +364,15 @@ public class MultiStateView extends FrameLayout {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+        // Prefer the AttachInfo handler on attach:
         mHandler = new MultiStateHandler(getHandler().getLooper());
     }
 
     @Override
     protected void onDetachedFromWindow() {
         mHandler.removeMessages(MultiStateHandler.MESSAGE_HIDE_PREVIOUS);
-        mHandler = null;
+        // Reset it to a default looper
+        mHandler = new MultiStateHandler();
         super.onDetachedFromWindow();
     }
 
@@ -556,7 +560,6 @@ public class MultiStateView extends FrameLayout {
     private class MultiStateHandler extends Handler {
         public static final int MESSAGE_HIDE_PREVIOUS = 0;
 
-        @SuppressWarnings("unused")
         public MultiStateHandler() {
             super();
         }
