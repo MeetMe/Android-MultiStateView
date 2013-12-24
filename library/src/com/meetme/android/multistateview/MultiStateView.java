@@ -2,10 +2,12 @@ package com.meetme.android.multistateview;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -23,15 +25,14 @@ public class MultiStateView extends FrameLayout {
     private View mNetworkErrorView;
     private View mGeneralErrorView;
     private OnClickListener mTapToRetryClickListener;
+    private MultiStateHandler mHandler;
 
     public MultiStateView(Context context) {
-        super(context);
-        parseAttrs(context, null);
+        this(context, null);
     }
 
     public MultiStateView(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        parseAttrs(context, attrs);
+        this(context, attrs, 0);
     }
 
     public MultiStateView(Context context, AttributeSet attrs, int defStyle) {
@@ -175,15 +176,10 @@ public class MultiStateView extends FrameLayout {
 
         final ContentState previousState = mViewState.state;
 
+        // Remove any previously pending hide events for the to-be-shown state
+        mHandler.removeMessages(MultiStateHandler.MESSAGE_HIDE_PREVIOUS, state);
         // Only change visibility after other UI tasks have been performed
-        this.post(new Runnable() {
-            @Override
-            public void run() {
-                Log.v("DALLAS", "Attempting to change state from " + previousState);
-                // Hide the current state
-                getStateView(previousState).setVisibility(View.GONE);
-            }
-        });
+        mHandler.sendMessage(mHandler.obtainMessage(MultiStateHandler.MESSAGE_HIDE_PREVIOUS, previousState));
 
         mViewState.state = state;
 
@@ -364,6 +360,19 @@ public class MultiStateView extends FrameLayout {
     }
 
     @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        mHandler = new MultiStateHandler(getHandler().getLooper());
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        mHandler.removeMessages(MultiStateHandler.MESSAGE_HIDE_PREVIOUS);
+        mHandler = null;
+        super.onDetachedFromWindow();
+    }
+
+    @Override
     public void addView(View child) {
         if (!isViewInternal(child)) {
             addContentView(child);
@@ -537,5 +546,34 @@ public class MultiStateView extends FrameLayout {
                 return new MultiStateViewData[size];
             }
         };
+    }
+
+    /**
+     * Handler used to hide the previous state when switching to a new state
+     *
+     * @author jhansche
+     */
+    private class MultiStateHandler extends Handler {
+        public static final int MESSAGE_HIDE_PREVIOUS = 0;
+
+        @SuppressWarnings("unused")
+        public MultiStateHandler() {
+            super();
+        }
+
+        public MultiStateHandler(Looper looper) {
+            super(looper);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MESSAGE_HIDE_PREVIOUS:
+                    ContentState previousState = (ContentState) msg.obj;
+                    View previousView = getStateView(previousState);
+                    if (previousView != null) previousView.setVisibility(View.GONE);
+                    break;
+            }
+        }
     }
 }
