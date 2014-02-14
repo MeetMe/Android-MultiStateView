@@ -8,3 +8,5 @@ local.properties
 *.BridgeSort
 out/
 tmp/
+build/*
+*.iml

@@ -21,6 +21,7 @@ public class MultiStateView extends FrameLayout {
     private MultiStateViewData mViewState = new MultiStateViewData(ContentState.CONTENT);
 
     private View mContentView;
+    private View mEmptyView;
     private View mLoadingView;
     private View mNetworkErrorView;
     private View mGeneralErrorView;
@@ -55,6 +56,7 @@ public class MultiStateView extends FrameLayout {
             setLoadingLayoutResourceId(a.getResourceId(R.styleable.MultiStateView_msvLoadingLayout, R.layout.msv__loading));
             setGeneralErrorLayoutResourceId(a.getResourceId(R.styleable.MultiStateView_msvErrorUnknownLayout, R.layout.msv__error_unknown));
             setNetworkErrorLayoutResourceId(a.getResourceId(R.styleable.MultiStateView_msvErrorNetworkLayout, R.layout.msv__error_network));
+            setEmptyLayoutResourceId(a.getResourceId(R.styleable.MultiStateView_msvEmptyLayout, R.layout.msv__empty));
 
             String tmpString;
 
@@ -81,6 +83,14 @@ public class MultiStateView extends FrameLayout {
             }
 
             setTapToRetryString(tmpString);
+
+            tmpString = a.getString(R.styleable.MultiStateView_msvEmptyLayout);
+
+            if (tmpString == null) {
+                tmpString = context.getString(R.string.nothing_to_show);
+            }
+
+            setEmptyString(tmpString);
 
             setState(a.getInt(R.styleable.MultiStateView_msvState, ContentState.CONTENT.nativeInt));
         } finally {
@@ -138,6 +148,18 @@ public class MultiStateView extends FrameLayout {
 
     public void setLoadingLayoutResourceId(int loadingLayout) {
         this.mViewState.loadingLayoutResId = loadingLayout;
+    }
+
+    private void setEmptyLayoutResourceId(int resourceId) {
+        mViewState.emptyLayoutResId = resourceId;
+    }
+
+    private void setEmptyString(String string) {
+        mViewState.emptyString = string;
+    }
+
+    public String getEmptyString() {
+        return mViewState.emptyString;
     }
 
     /**
@@ -207,6 +229,9 @@ public class MultiStateView extends FrameLayout {
      */
     public View getStateView(ContentState state) {
         switch (state) {
+            case EMPTY:
+                return getEmptyView();
+
             case ERROR_NETWORK:
                 return getNetworkErrorView();
 
@@ -221,6 +246,21 @@ public class MultiStateView extends FrameLayout {
         }
 
         return null;
+    }
+
+    /**
+     * Returns the view to be displayed when there is nothing to show (e.g., no search results)
+     */
+    public View getEmptyView() {
+        if (mEmptyView == null) {
+            mEmptyView = View.inflate(getContext(), mViewState.emptyLayoutResId, null);
+
+            ((TextView) mEmptyView.findViewById(R.id.empty)).setText(getEmptyString());
+
+            addView(mEmptyView);
+        }
+
+        return mEmptyView;
     }
 
     /**
@@ -322,7 +362,8 @@ public class MultiStateView extends FrameLayout {
     }
 
     private boolean isViewInternal(View view) {
-        return view == mNetworkErrorView || view == mGeneralErrorView || view == mLoadingView;
+        return view == mNetworkErrorView || view == mGeneralErrorView
+                || view == mLoadingView || view == mEmptyView;
     }
 
     @Override
@@ -359,6 +400,8 @@ public class MultiStateView extends FrameLayout {
         setNetworkErrorLayoutResourceId(state.networkErrorLayoutResId);
         setLoadingLayoutResourceId(state.loadingLayoutResId);
         setCustomErrorString(state.customErrorString);
+        setEmptyLayoutResourceId(state.emptyLayoutResId);
+        setEmptyString(state.emptyString);
     }
 
     @Override
@@ -448,7 +491,13 @@ public class MultiStateView extends FrameLayout {
          *
          * @see R.attr#msvState
          */
-        ERROR_GENERAL(0x03);
+        ERROR_GENERAL(0x03),
+        /**
+         * Used to indicate that the Empty indication should be displayed to the user
+         *
+         * @see R.attr#msvState
+         */
+        EMPTY(0x04);
 
         public final int nativeInt;
         private final static SparseArray<ContentState> sStates = new SparseArray<ContentState>();
@@ -506,9 +555,11 @@ public class MultiStateView extends FrameLayout {
         public int loadingLayoutResId;
         public int generalErrorLayoutResId;
         public int networkErrorLayoutResId;
+        public int emptyLayoutResId;
         public String networkErrorTitleString;
         public String generalErrorTitleString;
         public String tapToRetryString;
+        public String emptyString;
         public ContentState state;
 
         public MultiStateViewData(ContentState contentState) {
@@ -523,6 +574,7 @@ public class MultiStateView extends FrameLayout {
             networkErrorTitleString = in.readString();
             generalErrorTitleString = in.readString();
             tapToRetryString = in.readString();
+            emptyString = in.readString();
             state = ContentState.valueOf(in.readString());
         }
 
@@ -538,6 +590,7 @@ public class MultiStateView extends FrameLayout {
             dest.writeString(networkErrorTitleString);
             dest.writeString(generalErrorTitleString);
             dest.writeString(tapToRetryString);
+            dest.writeString(emptyString);
             dest.writeString(state.name());
         }
 
