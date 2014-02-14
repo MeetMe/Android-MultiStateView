@@ -4,5 +4,6 @@
     <string name="error_title_network">Network Error</string>
     <string name="error_title_unknown">Oops! We messed up.</string>
     <string name="tap_to_retry">Tap to retry</string>
+    <string name="nothing_to_show">Nothing to show</string>
 
 </resources>

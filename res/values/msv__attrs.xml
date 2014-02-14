@@ -12,8 +12,11 @@
             <enum name="error_network" value="0x02" />
             <!-- The state is to show loading indication -->
             <enum name="error_unknown" value="0x03" />
+            <!-- The state is to show empty view state -->
+            <enum name="empty" value="0x04" />
         </attr>
 
+        <attr name="msvEmptyLayout" format="reference" />
         <attr name="msvLoadingLayout" format="reference" />
         <attr name="msvErrorUnknownLayout" format="reference" />
         <attr name="msvErrorNetworkLayout" format="reference" />
