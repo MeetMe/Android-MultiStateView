@@ -6,11 +6,9 @@ Handles multiple display states for data-centric views
 
 The following shows examples (using default layouts) for **Loading**, **General Error**, **Network Error**, and the **Content** states (where we've made the "Hello World" the content) in respective order.
 
-![Loading state](screenshots/sample_loading.png)
-![General error state](screenshots/sample_general_error.png)
+![Loading state](screenshots/sample_loading.png) ![General error state](screenshots/sample_general_error.png)
 
-![Network error state](screenshots/sample_network_error.png) 
-![Content state](screenshots/sample_content.png)
+![Network error state](screenshots/sample_network_error.png) ![Content state](screenshots/sample_content.png)
 
 ## Usage
 
