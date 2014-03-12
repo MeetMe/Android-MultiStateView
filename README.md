@@ -8,7 +8,8 @@ The following shows examples (using default layouts) for **Loading**, **General 
 
 ![Loading state](screenshots/sample_loading.png)
 ![General error state](screenshots/sample_general_error.png)
-![Network error state](screenshots/sample_network_error.png)
+
+![Network error state](screenshots/sample_network_error.png) 
 ![Content state](screenshots/sample_content.png)
 
 ## Usage
@@ -20,7 +21,7 @@ The following shows examples (using default layouts) for **Loading**, **General 
 
 - Assuming you're starting with:
 
-````xml
+```xml
         <LinearLayout
             xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="fill_parent"
@@ -33,11 +34,11 @@ The following shows examples (using default layouts) for **Loading**, **General 
                 android:layout_height="match_parent" />
 
         </LinearLayout>
-````
+```
 
 - You should end up with something like:
 
-````xml
+```xml
         <LinearLayout
             xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="fill_parent"
@@ -56,7 +57,7 @@ The following shows examples (using default layouts) for **Loading**, **General 
             </com.meetme.android.multistateview.MultiStateView>
 
         </LinearLayout>
-````
+```
 
   **Example Notes**
  0. `android:id="@+id/list"` was moved from the `ListView` to the `MultiStateView`
@@ -65,16 +66,22 @@ The following shows examples (using default layouts) for **Loading**, **General 
 
 - In code,
 
-        ListView list = (ListView) findViewById(R.id.list);
+```java
+ListView list = (ListView) findViewById(R.id.list);
+```
 
 - Becomes
 
-        MultiStateView container = (MultiStateView) findViewById(R.id.list_container);
-        ListView list = (ListView) container.getContentView();
+```java
+MultiStateView container = (MultiStateView) findViewById(R.id.list_container);
+ListView list = (ListView) container.getContentView();
+```
 
 - To control the state of the `MultiStateView`, use the `MultiStateView#setState(State)` method.
 
-        container.setState(State.LOADING);
+```java
+container.setState(State.LOADING);
+```
 
 - By default, "Loading" indication uses the loading layout provided in the library (`res/layout/msv__loading.xml`). To customize, you can add the custom attribute `msvLoadingLayout` to the `MultiStateView` in XML with a reference to the layout to inflate.
 
