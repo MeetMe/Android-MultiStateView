@@ -10,6 +10,7 @@ import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.SparseArray;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -19,13 +20,13 @@ import android.widget.TextView;
  */
 public class MultiStateView extends FrameLayout {
 
-    public static final int CONTENT_STATE_ID_CONTENT = 0x00;
+    public static final int CONTENT_STATE_ID_CONTENT = 0;
 
-    public static final int CONTENT_STATE_ID_LOADING = 0x01;
+    public static final int CONTENT_STATE_ID_LOADING = 1;
 
-    public static final int CONTENT_STATE_ID_ERROR_NETWORK = 0x02;
+    public static final int CONTENT_STATE_ID_ERROR_NETWORK = 2;
 
-    public static final int CONTENT_STATE_ID_ERROR_GENERAL = 0x03;
+    public static final int CONTENT_STATE_ID_ERROR_GENERAL = 3;
 
     public final static int MIN_CONTENT_STATE_ID = CONTENT_STATE_ID_ERROR_GENERAL + 1;
 
@@ -47,7 +48,7 @@ public class MultiStateView extends FrameLayout {
 
     private final StateViewProvider mBuiltinProvider = new StateViewProvider() {
         @Override
-        public View onCreateStateView(Context context, int stateViewId) {
+        public View onCreateStateView(Context context, ViewGroup container, int stateViewId) {
             switch (stateViewId) {
                 case CONTENT_STATE_ID_ERROR_NETWORK:
                     return getNetworkErrorView();
@@ -64,17 +65,50 @@ public class MultiStateView extends FrameLayout {
 
             return null;
         }
+
+        @Override
+        public void onBeforeViewShown(int stateViewId, View view) {
+            if (stateViewId == CONTENT_STATE_ID_ERROR_GENERAL) {
+                TextView textView = ((TextView) view.findViewById(R.id.error_title));
+
+                if (textView != null) {
+                    textView.setText(getGeneralErrorTitleString());
+                }
+            }
+        }
     };
 
     private SparseArray<View> mStateViewCache = new SparseArray<View>();
 
-    public static interface StateViewProvider {
-        View onCreateStateView(Context context, int stateViewId);
+    public static interface StateViewProvider<T extends View> {
+        /**
+         * Called when a View is needed for the given state, and no cached version exists
+         *
+         * @param context
+         * @param container
+         * @param stateViewId
+         * @return
+         */
+        T onCreateStateView(Context context, ViewGroup container, int stateViewId);
+
+        /**
+         * Called just before the view is going to be shown to the user. Set any text or other things on the view at this point if variable
+         *
+         * @param stateViewId
+         * @param view
+         */
+        void onBeforeViewShown(int stateViewId, T view);
     }
 
 
+    /**
+     * Registers the given provider for the given state id
+     *
+     * @param contentStateId
+     * @param provider
+     */
     public void registerStateViewProvider(int contentStateId, StateViewProvider provider) {
-
+        mProviders.put(contentStateId, provider);
     }
 
     public MultiStateView(Context context) {
@@ -207,8 +241,8 @@ public class MultiStateView extends FrameLayout {
      * This is a legacy method and is deprecated in favor of using the integer forms. If you're using custom states and you attempt to use this
      * method, an IllegalStateException will be thrown as custom states cannot be converted to non-existent enumerated values
      *
-     * @deprecated
      * @return the {@link ContentState} the view is currently in
+     * @deprecated
      */
     public ContentState getState() {
         if (mViewState.state < MIN_CONTENT_STATE_ID) {
@@ -243,23 +277,16 @@ public class MultiStateView extends FrameLayout {
         final int previousState = mViewState.state;
 
         // Remove any previously pending hide events for the to-be-shown state
-        mHandler.removeMessages(MultiStateHandler.MESSAGE_HIDE_PREVIOUS, state);
+        mHandler.removeMessages(MultiStateHandler.MESSAGE_HIDE_PREVIOUS);
         // Only change visibility after other UI tasks have been performed
-        mHandler.sendMessage(mHandler.obtainMessage(MultiStateHandler.MESSAGE_HIDE_PREVIOUS, previousState));
+        mHandler.sendMessage(mHandler.obtainMessage(MultiStateHandler.MESSAGE_HIDE_PREVIOUS, previousState, -1));
 
         mViewState.state = state;
 
         View newStateView = getStateView(state);
 
         if (newStateView != null) {
-            if (state == CONTENT_STATE_ID_ERROR_GENERAL) {
-                TextView view = ((TextView) newStateView.findViewById(R.id.error_title));
-
-                if (view != null) {
-                    view.setText(getGeneralErrorTitleString());
-                }
-            }
-
+            mProviders.get(state).onBeforeViewShown(state, newStateView);
             newStateView.setVisibility(View.VISIBLE);
         }
     }
@@ -280,7 +307,7 @@ public class MultiStateView extends FrameLayout {
 
         if (view == null) {
             // Not cached, pull from the provider
-            view = mProviders.get(stateViewId).onCreateStateView(getContext(), stateViewId);
+            view = mProviders.get(stateViewId).onCreateStateView(getContext(), this, stateViewId);
 
             // And store in cache
             mStateViewCache.put(stateViewId, view);
@@ -659,7 +686,7 @@ public class MultiStateView extends FrameLayout {
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case MESSAGE_HIDE_PREVIOUS:
-                    ContentState previousState = (ContentState) msg.obj;
+                    int previousState = msg.arg1;
                     View previousView = getStateView(previousState);
                     if (previousView != null) previousView.setVisibility(View.GONE);
                     break;
