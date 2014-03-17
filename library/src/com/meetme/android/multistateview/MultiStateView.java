@@ -286,6 +286,10 @@ public class MultiStateView extends FrameLayout {
         View newStateView = getStateView(state);
 
         if (newStateView != null) {
+            if (newStateView.getParent() == null) {
+                addView(newStateView);
+            }
+
             mProviders.get(state).onBeforeViewShown(state, newStateView);
             newStateView.setVisibility(View.VISIBLE);
         }
@@ -339,8 +343,6 @@ public class MultiStateView extends FrameLayout {
             ((TextView) mNetworkErrorView.findViewById(R.id.tap_to_retry)).setText(getTapToRetryString());
 
             mNetworkErrorView.setOnClickListener(mTapToRetryClickListener);
-
-            addView(mNetworkErrorView);
         }
 
         return mNetworkErrorView;
@@ -359,8 +361,6 @@ public class MultiStateView extends FrameLayout {
             ((TextView) mGeneralErrorView.findViewById(R.id.tap_to_retry)).setText(getTapToRetryString());
 
             mGeneralErrorView.setOnClickListener(mTapToRetryClickListener);
-
-            addView(mGeneralErrorView);
         }
 
         return mGeneralErrorView;
@@ -372,8 +372,6 @@ public class MultiStateView extends FrameLayout {
     public View getLoadingView() {
         if (mLoadingView == null) {
             mLoadingView = View.inflate(getContext(), mViewState.loadingLayoutResId, null);
-
-            addView(mLoadingView);
         }
 
         return mLoadingView;
@@ -426,7 +424,7 @@ public class MultiStateView extends FrameLayout {
     }
 
     private boolean isViewInternal(View view) {
-        return view == mNetworkErrorView || view == mGeneralErrorView || view == mLoadingView;
+        return mStateViewCache.indexOfValue(view) >= 0;
     }
 
     @Override
