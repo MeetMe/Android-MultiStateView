@@ -80,6 +80,8 @@ public class MultiStateView extends FrameLayout {
 
     private SparseArray<View> mStateViewCache = new SparseArray<View>();
 
+    private int mPendingState = -1;
+
     public static interface StateViewProvider<T extends View> {
         /**
          * Called when a View is needed for the given state, and no cached version exists
@@ -175,7 +177,7 @@ public class MultiStateView extends FrameLayout {
 
             setTapToRetryString(tmpString);
 
-            setContentState(a.getInt(R.styleable.MultiStateView_msvState, ContentState.CONTENT.nativeInt));
+            mPendingState = a.getInt(R.styleable.MultiStateView_msvState, CONTENT_STATE_ID_CONTENT);
         } finally {
             a.recycle();
         }
@@ -263,25 +265,22 @@ public class MultiStateView extends FrameLayout {
      * @see #registerStateViewProvider(int, com.meetme.android.multistateview.MultiStateView.StateViewProvider)
      */
     public void setContentState(int state) {
-        if (state == mViewState.state) {
+        final int previousState = mViewState.state;
+
+        if (state == previousState) {
             // No change
             return;
         }
 
-        final View contentView = getContentView();
-
-        if (contentView == null) {
-            return;
-        }
-
-        final int previousState = mViewState.state;
-
+        // Remove any previously pending show events for the previously-shown (since we're going to add one in the future)
+        mHandler.removeMessages(MultiStateHandler.MESSAGE_SHOW, previousState);
         // Remove any previously pending hide events for the to-be-shown state
-        mHandler.removeMessages(MultiStateHandler.MESSAGE_HIDE_PREVIOUS);
-        // Only change visibility after other UI tasks have been performed
-        mHandler.sendMessage(mHandler.obtainMessage(MultiStateHandler.MESSAGE_HIDE_PREVIOUS, previousState, -1));
+        mHandler.removeMessages(MultiStateHandler.MESSAGE_HIDE, state);
 
-        mViewState.state = state;
+        if (previousState != -1) {
+            // Only change visibility after other UI tasks have been performed
+            mHandler.sendMessage(mHandler.obtainMessage(MultiStateHandler.MESSAGE_HIDE, previousState));
+        }
 
         View newStateView = getStateView(state);
 
@@ -291,8 +290,11 @@ public class MultiStateView extends FrameLayout {
             }
 
             mProviders.get(state).onBeforeViewShown(state, newStateView);
-            newStateView.setVisibility(View.VISIBLE);
         }
+
+        mHandler.sendMessage(mHandler.obtainMessage(MultiStateHandler.MESSAGE_SHOW, state));
+
+        mViewState.state = state;
     }
 
     /**
@@ -468,11 +470,16 @@ public class MultiStateView extends FrameLayout {
         super.onAttachedToWindow();
         // Prefer the AttachInfo handler on attach:
         mHandler = new MultiStateHandler(getHandler().getLooper());
+
+        if (mPendingState != -1) {
+            setContentState(mPendingState);
+            mPendingState = -1;
+        }
     }
 
     @Override
     protected void onDetachedFromWindow() {
-        mHandler.removeMessages(MultiStateHandler.MESSAGE_HIDE_PREVIOUS);
+        mHandler.removeMessages(MultiStateHandler.MESSAGE_HIDE);
         // Reset it to a default looper
         mHandler = new MultiStateHandler();
         super.onDetachedFromWindow();
@@ -482,45 +489,45 @@ public class MultiStateView extends FrameLayout {
     public void addView(View child) {
         if (!isViewInternal(child)) {
             addContentView(child);
+        } else {
+            super.addView(child);
         }
-
-        super.addView(child);
     }
 
     @Override
     public void addView(View child, int index) {
         if (!isViewInternal(child)) {
             addContentView(child);
+        } else {
+            super.addView(child, index);
         }
-
-        super.addView(child, index);
     }
 
     @Override
     public void addView(View child, int index, android.view.ViewGroup.LayoutParams params) {
         if (!isViewInternal(child)) {
             addContentView(child);
+        } else {
+            super.addView(child, index, params);
         }
-
-        super.addView(child, index, params);
     }
 
     @Override
     public void addView(View child, int width, int height) {
         if (!isViewInternal(child)) {
             addContentView(child);
+        } else {
+            super.addView(child, width, height);
         }
-
-        super.addView(child, width, height);
     }
 
     @Override
     public void addView(View child, android.view.ViewGroup.LayoutParams params) {
         if (!isViewInternal(child)) {
             addContentView(child);
+        } else {
+            super.addView(child, params);
         }
-
-        super.addView(child, params);
     }
 
     /**
@@ -621,7 +628,7 @@ public class MultiStateView extends FrameLayout {
 
         public String tapToRetryString;
 
-        public int state;
+        public int state = -1;
 
         public MultiStateViewData(int contentState) {
             state = contentState;
@@ -670,7 +677,9 @@ public class MultiStateView extends FrameLayout {
      * @author jhansche
      */
     private class MultiStateHandler extends Handler {
-        public static final int MESSAGE_HIDE_PREVIOUS = 0;
+        public static final int MESSAGE_HIDE = 0;
+
+        public static final int MESSAGE_SHOW = 1;
 
         public MultiStateHandler() {
             super();
@@ -682,12 +691,21 @@ public class MultiStateView extends FrameLayout {
 
         @Override
         public void handleMessage(Message msg) {
+            int state = (Integer) msg.obj;
+            View view = getStateView(state);
+            int visibility = View.VISIBLE;
+
             switch (msg.what) {
-                case MESSAGE_HIDE_PREVIOUS:
-                    int previousState = msg.arg1;
-                    View previousView = getStateView(previousState);
-                    if (previousView != null) previousView.setVisibility(View.GONE);
+                case MESSAGE_HIDE:
+                    visibility = View.GONE;
                     break;
+                case MESSAGE_SHOW:
+                    visibility = View.VISIBLE;
+                    break;
+            }
+
+            if (view != null) {
+                view.setVisibility(visibility);
             }
         }
     }
