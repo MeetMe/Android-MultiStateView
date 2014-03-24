@@ -400,7 +400,7 @@ public class MultiStateView extends FrameLayout {
      */
     private void addContentView(View contentView) {
         if (mContentView != null && mContentView != contentView) {
-            throw new IllegalStateException("Can't add more than one view to MultiStateView");
+            throw new IllegalStateException("Can't add more than one content view to MultiStateView");
         }
 
         setContentView(contentView);
@@ -421,8 +421,6 @@ public class MultiStateView extends FrameLayout {
      */
     public void setContentView(View contentView) {
         mContentView = contentView;
-
-        setContentState(mViewState.state);
     }
 
     private boolean isViewInternal(View view) {
@@ -489,45 +487,45 @@ public class MultiStateView extends FrameLayout {
     public void addView(View child) {
         if (!isViewInternal(child)) {
             addContentView(child);
-        } else {
-            super.addView(child);
         }
+
+        super.addView(child);
     }
 
     @Override
     public void addView(View child, int index) {
         if (!isViewInternal(child)) {
             addContentView(child);
-        } else {
-            super.addView(child, index);
         }
+
+        super.addView(child, index);
     }
 
     @Override
     public void addView(View child, int index, android.view.ViewGroup.LayoutParams params) {
         if (!isViewInternal(child)) {
             addContentView(child);
-        } else {
-            super.addView(child, index, params);
         }
+
+        super.addView(child, index, params);
     }
 
     @Override
     public void addView(View child, int width, int height) {
         if (!isViewInternal(child)) {
             addContentView(child);
-        } else {
-            super.addView(child, width, height);
         }
+
+        super.addView(child, width, height);
     }
 
     @Override
     public void addView(View child, android.view.ViewGroup.LayoutParams params) {
         if (!isViewInternal(child)) {
             addContentView(child);
-        } else {
-            super.addView(child, params);
         }
+
+        super.addView(child, params);
     }
 
     /**
