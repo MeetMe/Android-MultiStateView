@@ -272,6 +272,10 @@ public class MultiStateView extends FrameLayout {
             return;
         }
 
+        if (mPendingState != -1) {
+            mPendingState = state;
+        }
+
         // Remove any previously pending show events for the previously-shown (since we're going to add one in the future)
         mHandler.removeMessages(MultiStateHandler.MESSAGE_SHOW, previousState);
         // Remove any previously pending hide events for the to-be-shown state
