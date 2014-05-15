@@ -25,9 +25,20 @@ public class MainActivity extends ActionBarActivity {
 
         mStateView = (TextView) findViewById(R.id.state);
         mMultiStateView = (MultiStateView) findViewById(R.id.content);
+    }
+
+    @Override
+    protected void onPostCreate(Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+
         mState = mMultiStateView.getState();
-        setStateText(mState);
         mExampleOfHowToGetContentView = (TextView) mMultiStateView.getContentView();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        setStateText(mState);
     }
 
     private void setStateText(MultiStateView.ContentState state) {
@@ -48,6 +59,7 @@ public class MainActivity extends ActionBarActivity {
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
+
         if (id == R.id.action_rotate_state) {
             // This is only done because we're rotating state; you'd typically just call direct to mMultiStateView#setState(ContentState)
             MultiStateView.ContentState newState = MultiStateView.ContentState.values()[(mState.ordinal() + 1) % MultiStateView.ContentState.values().length];
@@ -55,6 +67,7 @@ public class MainActivity extends ActionBarActivity {
             setState(newState);
             return true;
         }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -63,5 +76,4 @@ public class MainActivity extends ActionBarActivity {
         mMultiStateView.setState(state);
         mState = state;
     }
-
 }
