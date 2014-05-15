@@ -354,6 +354,7 @@ public class MultiStateView extends FrameLayout {
     }
 
     private void setViewState(MultiStateViewData state) {
+        setState(state.state);
         setTapToRetryString(state.tapToRetryString);
         setGeneralErrorTitleString(state.generalErrorTitleString);
         setNetworkErrorTitleString(state.networkErrorTitleString);
@@ -361,7 +362,6 @@ public class MultiStateView extends FrameLayout {
         setNetworkErrorLayoutResourceId(state.networkErrorLayoutResId);
         setLoadingLayoutResourceId(state.loadingLayoutResId);
         setCustomErrorString(state.customErrorString);
-        setState(state.state);
     }
 
     @Override
