@@ -13,12 +13,15 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import java.lang.ref.WeakReference;
+
 /**
  * A view designed to wrap a single child (the "content") and hide/show that content based on the current "state" (see {@link ContentState}) of this
  * View. Note that this layout can only have one direct descendant which is used as the "content" view
  */
+@SuppressWarnings("NullableProblems")
 public class MultiStateView extends FrameLayout {
-    private MultiStateViewData mViewState = new MultiStateViewData(ContentState.CONTENT);
+    private final MultiStateViewData mViewState = new MultiStateViewData(ContentState.CONTENT);
 
     private View mContentView;
     private View mLoadingView;
@@ -38,7 +41,7 @@ public class MultiStateView extends FrameLayout {
     public MultiStateView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         // Start out with a default handler/looper
-        mHandler = new MultiStateHandler();
+        mHandler = new MultiStateHandler(this);
         parseAttrs(context, attrs);
     }
 
@@ -151,9 +154,9 @@ public class MultiStateView extends FrameLayout {
      * Configures the view to be in the given state. This method is an internal method used for parsing the native integer value used in attributes in
      * XML
      *
+     * @param nativeInt
      * @see ContentState
      * @see #setState(ContentState)
-     * @param nativeInt
      */
     private void setState(int nativeInt) {
         setState(ContentState.getState(nativeInt));
@@ -165,6 +168,9 @@ public class MultiStateView extends FrameLayout {
      * @param state
      */
     public void setState(final ContentState state) {
+        // Remove any previously pending hide events for the to-be-shown state
+        mHandler.removeMessages(MultiStateHandler.MESSAGE_HIDE_PREVIOUS, state);
+
         if (state == mViewState.state) {
             // No change
             return;
@@ -178,9 +184,8 @@ public class MultiStateView extends FrameLayout {
 
         final ContentState previousState = mViewState.state;
 
-        // Remove any previously pending hide events for the to-be-shown state
-        mHandler.removeMessages(MultiStateHandler.MESSAGE_HIDE_PREVIOUS, state);
         // Only change visibility after other UI tasks have been performed
+        mHandler.removeMessages(MultiStateHandler.MESSAGE_HIDE_PREVIOUS, previousState);
         mHandler.sendMessage(mHandler.obtainMessage(MultiStateHandler.MESSAGE_HIDE_PREVIOUS, previousState));
 
         mViewState.state = state;
@@ -190,6 +195,7 @@ public class MultiStateView extends FrameLayout {
         if (newStateView != null) {
             if (state == ContentState.ERROR_GENERAL) {
                 TextView view = ((TextView) newStateView.findViewById(R.id.error_title));
+
                 if (view != null) {
                     view.setText(getGeneralErrorTitleString());
                 }
@@ -338,16 +344,13 @@ public class MultiStateView extends FrameLayout {
 
     @Override
     protected void onRestoreInstanceState(Parcelable state) {
-        if (!(state instanceof SavedState)) {
-            super.onRestoreInstanceState(state);
-            return;
+        if (state instanceof SavedState) {
+            SavedState myState = (SavedState) state;
+            setViewState(myState.state);
+            state = myState.getSuperState();
         }
 
-        SavedState myState = (SavedState) state;
-
-        setViewState(myState.state);
-
-        super.onRestoreInstanceState(myState.getSuperState());
+        super.onRestoreInstanceState(state);
     }
 
     private void setViewState(MultiStateViewData state) {
@@ -364,15 +367,16 @@ public class MultiStateView extends FrameLayout {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        // Prefer the AttachInfo handler on attach:
-        mHandler = new MultiStateHandler(getHandler().getLooper());
+        mHandler.release();
+        // Prefer the AttachInfo handler on attach
+        mHandler = new MultiStateHandler(this, getHandler().getLooper());
     }
 
     @Override
     protected void onDetachedFromWindow() {
-        mHandler.removeMessages(MultiStateHandler.MESSAGE_HIDE_PREVIOUS);
+        mHandler.release();
         // Reset it to a default looper
-        mHandler = new MultiStateHandler();
+        mHandler = new MultiStateHandler(this);
         super.onDetachedFromWindow();
     }
 
@@ -451,7 +455,7 @@ public class MultiStateView extends FrameLayout {
         ERROR_GENERAL(0x03);
 
         public final int nativeInt;
-        private final static SparseArray<ContentState> sStates = new SparseArray<ContentState>();
+        private static final SparseArray<ContentState> sStates = new SparseArray<ContentState>();
 
         static {
             for (ContentState scaleType : values()) {
@@ -481,7 +485,7 @@ public class MultiStateView extends FrameLayout {
 
         private SavedState(Parcel in) {
             super(in);
-            state = (MultiStateViewData) in.readParcelable(MultiStateViewData.class.getClassLoader());
+            state = in.readParcelable(MultiStateViewData.class.getClassLoader());
         }
 
         @Override
@@ -557,23 +561,34 @@ public class MultiStateView extends FrameLayout {
      *
      * @author jhansche
      */
-    private class MultiStateHandler extends Handler {
+    private static class MultiStateHandler extends Handler {
         public static final int MESSAGE_HIDE_PREVIOUS = 0;
+        private final WeakReference<MultiStateView> mReference;
 
-        public MultiStateHandler() {
+        public MultiStateHandler(MultiStateView view) {
             super();
+            mReference = new WeakReference<MultiStateView>(view);
         }
 
-        public MultiStateHandler(Looper looper) {
+        public MultiStateHandler(MultiStateView view, Looper looper) {
             super(looper);
+            mReference = new WeakReference<MultiStateView>(view);
+        }
+
+        public void release() {
+            removeCallbacksAndMessages(null);
+            mReference.clear();
         }
 
         @Override
         public void handleMessage(Message msg) {
+            MultiStateView view = mReference.get();
+            if (view == null) return;
+
             switch (msg.what) {
                 case MESSAGE_HIDE_PREVIOUS:
                     ContentState previousState = (ContentState) msg.obj;
-                    View previousView = getStateView(previousState);
+                    View previousView = view.getStateView(previousState);
                     if (previousView != null) previousView.setVisibility(View.GONE);
                     break;
             }
