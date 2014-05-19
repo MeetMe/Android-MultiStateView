@@ -2,7 +2,9 @@ apply plugin: 'android-library'
 
 android {
     compileSdkVersion 19
-    buildToolsVersion "19.0.3"
+    buildToolsVersion "19.1.0"
+    // Allow publishing both debug and release variants
+    publishNonDefault true
 
     sourceSets {
         main {
@@ -12,4 +14,8 @@ android {
             assets.srcDirs = ['assets']
         }
     }
+}
+
+dependencies {
+    compile 'com.android.support:support-annotations:+'
 }
