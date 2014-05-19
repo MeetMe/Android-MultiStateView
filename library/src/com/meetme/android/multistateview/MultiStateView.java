@@ -2,18 +2,18 @@ package com.meetme.android.multistateview;
 
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import java.lang.ref.WeakReference;
+import java.util.Locale;
 
 /**
  * A view designed to wrap a single child (the "content") and hide/show that content based on the current "state" (see {@link ContentState}) of this
@@ -21,6 +21,7 @@ import java.lang.ref.WeakReference;
  */
 @SuppressWarnings("NullableProblems")
 public class MultiStateView extends FrameLayout {
+    private static final String TAG = "MultiStateView";
     private final MultiStateViewData mViewState = new MultiStateViewData(ContentState.CONTENT);
 
     private View mContentView;
@@ -28,7 +29,6 @@ public class MultiStateView extends FrameLayout {
     private View mNetworkErrorView;
     private View mGeneralErrorView;
     private OnClickListener mTapToRetryClickListener;
-    private MultiStateHandler mHandler;
 
     public MultiStateView(Context context) {
         this(context, null);
@@ -41,7 +41,6 @@ public class MultiStateView extends FrameLayout {
     public MultiStateView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         // Start out with a default handler/looper
-        mHandler = new MultiStateHandler(this);
         parseAttrs(context, attrs);
     }
 
@@ -146,13 +145,14 @@ public class MultiStateView extends FrameLayout {
     /**
      * @return the {@link ContentState} the view is currently in
      */
+    @NonNull
     public ContentState getState() {
         return mViewState.state != null ? mViewState.state : ContentState.CONTENT;
     }
 
     /**
-     * Configures the view to be in the given state. This method is an internal method used for parsing the native integer value used in attributes in
-     * XML
+     * Configures the view to be in the given state. This method is an internal method used for parsing the native integer value used in attributes
+     * in XML.
      *
      * @param nativeInt
      * @see ContentState
@@ -168,10 +168,8 @@ public class MultiStateView extends FrameLayout {
      * @param state
      */
     public void setState(final ContentState state) {
-        // Remove any previously pending hide events for the to-be-shown state
-        mHandler.removeMessages(MultiStateHandler.MESSAGE_HIDE_PREVIOUS, state);
-
         if (state == mViewState.state) {
+            if (BuildConfig.DEBUG) Log.v(TAG, "Already in state " + mViewState.state);
             // No change
             return;
         }
@@ -179,17 +177,20 @@ public class MultiStateView extends FrameLayout {
         final View contentView = getContentView();
 
         if (contentView == null) {
+            if (BuildConfig.DEBUG) Log.v(TAG, "Content not yet set, waiting...");
             return;
         }
 
+        // Hide the previous state view
         final ContentState previousState = mViewState.state;
+        View previousView = getStateView(previousState);
 
-        // Only change visibility after other UI tasks have been performed
-        mHandler.removeMessages(MultiStateHandler.MESSAGE_HIDE_PREVIOUS, previousState);
-        mHandler.sendMessage(mHandler.obtainMessage(MultiStateHandler.MESSAGE_HIDE_PREVIOUS, previousState));
+        if (previousView != null) {
+            if (BuildConfig.DEBUG) Log.v(TAG, "Hiding previous state " + previousState);
+            previousView.setVisibility(View.GONE);
+        }
 
-        mViewState.state = state;
-
+        // Show the new state view
         View newStateView = getStateView(state);
 
         if (newStateView != null) {
@@ -201,8 +202,57 @@ public class MultiStateView extends FrameLayout {
                 }
             }
 
+            if (BuildConfig.DEBUG) Log.v(TAG, "Showing new state " + state);
             newStateView.setVisibility(View.VISIBLE);
         }
+
+        mViewState.state = state;
+
+        if (BuildConfig.DEBUG) {
+            dumpState();
+
+            // Now check if there are multiple visible children and emit a warning if so
+            boolean hasVisible = false;
+
+            for (int i = 0; i < getChildCount(); i++) {
+                View v = getChildAt(i);
+
+                if (v != null && v.getVisibility() != View.GONE) {
+                    // This should not happen
+                    if (hasVisible) Log.w(TAG, "MultiStateView has multiple visible children!");
+                    hasVisible = true;
+                }
+            }
+        }
+    }
+
+    /** Dump the current state of the view. Requires {@link BuildConfig#DEBUG}. */
+    public void dumpState() {
+        if (!BuildConfig.DEBUG) return;
+
+        Log.v(TAG, "/-- Start Dump State ---");
+        Log.v(TAG, "| Current state = " + mViewState.state);
+        Log.v(TAG, "| Children: " + getChildCount());
+
+        for (int i = 0; i < getChildCount(); i++) {
+            View child = getChildAt(i);
+            ContentState state = null;
+
+            if (child == mContentView) {
+                state = ContentState.CONTENT;
+            } else if (child == mGeneralErrorView) {
+                state = ContentState.ERROR_GENERAL;
+            } else if (child == mNetworkErrorView) {
+                state = ContentState.ERROR_NETWORK;
+            } else if (child == mLoadingView) {
+                state = ContentState.LOADING;
+            }
+
+            Log.v(TAG, String.format(Locale.US, "| - #%d: %s (%s) -> %s",
+                    i, child, state, (child != null && child.getVisibility() == View.VISIBLE ? "visible" : "gone")));
+        }
+
+        Log.v(TAG, "\\-- End Dump State ---");
     }
 
     /**
@@ -211,7 +261,10 @@ public class MultiStateView extends FrameLayout {
      * @param state
      * @return
      */
+    @Nullable
     public View getStateView(ContentState state) {
+        if (state == null) return null;
+
         switch (state) {
             case ERROR_NETWORK:
                 return getNetworkErrorView();
@@ -234,6 +287,7 @@ public class MultiStateView extends FrameLayout {
      *
      * @return
      */
+    @NonNull
     public View getNetworkErrorView() {
         if (mNetworkErrorView == null) {
             mNetworkErrorView = View.inflate(getContext(), mViewState.networkErrorLayoutResId, null);
@@ -254,6 +308,7 @@ public class MultiStateView extends FrameLayout {
      *
      * @return
      */
+    @NonNull
     public View getGeneralErrorView() {
         if (mGeneralErrorView == null) {
             mGeneralErrorView = View.inflate(getContext(), mViewState.generalErrorLayoutResId, null);
@@ -272,6 +327,7 @@ public class MultiStateView extends FrameLayout {
     /**
      * Builds the loading view if not currently built, and returns the view
      */
+    @NonNull
     public View getLoadingView() {
         if (mLoadingView == null) {
             mLoadingView = View.inflate(getContext(), mViewState.loadingLayoutResId, null);
@@ -312,6 +368,7 @@ public class MultiStateView extends FrameLayout {
      * @return the view being used as "content" within the view (the developer-provided content -- doesn't ever give back internally maintained views
      * (like the loading layout))
      */
+    @Nullable
     public View getContentView() {
         return mContentView;
     }
@@ -334,11 +391,9 @@ public class MultiStateView extends FrameLayout {
     @Override
     protected Parcelable onSaveInstanceState() {
         Parcelable state = super.onSaveInstanceState();
-
         SavedState myState = new SavedState(state);
-
         myState.state = mViewState;
-
+        if (BuildConfig.DEBUG) Log.v(TAG, "Saved state: " + myState.state);
         return myState;
     }
 
@@ -354,6 +409,7 @@ public class MultiStateView extends FrameLayout {
     }
 
     private void setViewState(MultiStateViewData state) {
+        if (BuildConfig.DEBUG) Log.v(TAG, "Restoring state: " + state);
         setState(state.state);
         setTapToRetryString(state.tapToRetryString);
         setGeneralErrorTitleString(state.generalErrorTitleString);
@@ -362,22 +418,6 @@ public class MultiStateView extends FrameLayout {
         setNetworkErrorLayoutResourceId(state.networkErrorLayoutResId);
         setLoadingLayoutResourceId(state.loadingLayoutResId);
         setCustomErrorString(state.customErrorString);
-    }
-
-    @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-        mHandler.release();
-        // Prefer the AttachInfo handler on attach
-        mHandler = new MultiStateHandler(this, getHandler().getLooper());
-    }
-
-    @Override
-    protected void onDetachedFromWindow() {
-        mHandler.release();
-        // Reset it to a default looper
-        mHandler = new MultiStateHandler(this);
-        super.onDetachedFromWindow();
     }
 
     @Override
@@ -554,44 +594,14 @@ public class MultiStateView extends FrameLayout {
                 return new MultiStateViewData[size];
             }
         };
-    }
-
-    /**
-     * Handler used to hide the previous state when switching to a new state
-     *
-     * @author jhansche
-     */
-    private static class MultiStateHandler extends Handler {
-        public static final int MESSAGE_HIDE_PREVIOUS = 0;
-        private final WeakReference<MultiStateView> mReference;
-
-        public MultiStateHandler(MultiStateView view) {
-            super();
-            mReference = new WeakReference<MultiStateView>(view);
-        }
-
-        public MultiStateHandler(MultiStateView view, Looper looper) {
-            super(looper);
-            mReference = new WeakReference<MultiStateView>(view);
-        }
-
-        public void release() {
-            removeCallbacksAndMessages(null);
-            mReference.clear();
-        }
 
         @Override
-        public void handleMessage(Message msg) {
-            MultiStateView view = mReference.get();
-            if (view == null) return;
-
-            switch (msg.what) {
-                case MESSAGE_HIDE_PREVIOUS:
-                    ContentState previousState = (ContentState) msg.obj;
-                    View previousView = view.getStateView(previousState);
-                    if (previousView != null) previousView.setVisibility(View.GONE);
-                    break;
+        public String toString() {
+            if (BuildConfig.DEBUG) {
+                return String.format(Locale.US, "MultiStateViewData{state=%s}", state);
             }
+
+            return super.toString();
         }
     }
 }
