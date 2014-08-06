@@ -1,7 +1,9 @@
 package com.meetme.android.multistateview;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
@@ -43,6 +45,15 @@ public class MultiStateView extends FrameLayout {
         // Start out with a default handler/looper
         parseAttrs(context, attrs);
     }
+
+    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+    @Override
+    public boolean canScrollVertically(int direction) {
+        // This allows us to pass along whether our child is vertically scrollable or not (useful for SwipeRefreshLayout, for example)
+        return super.canScrollVertically(direction)
+                || (getState() == ContentState.CONTENT && mContentView != null && mContentView.canScrollVertically(direction));
+    }
+
 
     /**
      * Parses the incoming attributes from XML inflation
