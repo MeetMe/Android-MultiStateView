@@ -10,6 +10,11 @@ android {
     compileSdkVersion 19
     buildToolsVersion "20.0.0"
 
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_6
+        targetCompatibility JavaVersion.VERSION_1_6
+    }
+
     sourceSets {
         main {
             manifest.srcFile 'AndroidManifest.xml'
