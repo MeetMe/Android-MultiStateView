@@ -10,6 +10,26 @@ The following shows examples (using default layouts) for **Loading**, **General 
 
 ![Network error state](screenshots/sample_network_error.png)&nbsp;&nbsp;![Content state](screenshots/sample_content.png)
 
+## Install on your build.gradle
+
+Step 1. Add the repo
+
+```groovy
+    repositories {
+        maven {
+            url "https://jitpack.io"
+        }
+    }
+```
+
+Step 2. Add the dependency 
+
+```groovy
+    dependencies {
+            compile 'com.github.emanuelet:Android-MultiStateView:0.4.0'
+    }
+```
+
 ## Usage
 
  - For whatever `View` you want to switch out with `MultiStateView`, wrap the `View` in a `MultiStateView` node.
@@ -83,6 +103,8 @@ container.setState(State.LOADING);
 
 - By default, "Loading" indication uses the loading layout provided in the library (`res/layout/msv__loading.xml`). To customize, you can add the custom attribute `msvLoadingLayout` to the `MultiStateView` in XML with a reference to the layout to inflate.
 
+Original Library by [MeetMe](https://github.com/MeetMe/Android-MultiStateView)
+
 ## Contributors
  - [Dallas Gutauckis](http://github.com/dallasgutauckis)
 
@@ -90,7 +112,7 @@ container.setState(State.LOADING);
 
  Apache 2.0
 
-    Copyright 2013 MeetMe, Inc.
+    Copyright 2015 Emanuele Tonello
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
