@@ -26,7 +26,7 @@ Step 2. Add the dependency
 
 ```groovy
     dependencies {
-            compile 'com.github.emanuelet:Android-MultiStateView:0.4.0'
+            compile 'com.github.emanuelet:Android-MultiStateView:0.4.1'
     }
 ```
 
