@@ -8,12 +8,15 @@
             <enum name="content" value="0x00" />
             <!-- The state is to show loading indication -->
             <enum name="loading" value="0x01" />
-            <!-- The state is to show loading indication -->
+            <!-- The state is to show network errors -->
             <enum name="error_network" value="0x02" />
-            <!-- The state is to show loading indication -->
+            <!-- The state is to show other errors -->
             <enum name="error_unknown" value="0x03" />
+            <!-- The state is to show empty view state -->
+            <enum name="empty" value="0x04" />
         </attr>
 
+        <attr name="msvEmptyLayout" format="reference" />
         <attr name="msvLoadingLayout" format="reference" />
         <attr name="msvErrorUnknownLayout" format="reference" />
         <attr name="msvErrorNetworkLayout" format="reference" />
