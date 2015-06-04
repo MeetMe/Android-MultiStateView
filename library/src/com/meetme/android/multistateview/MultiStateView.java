@@ -170,6 +170,18 @@ public class MultiStateView extends FrameLayout {
     }
 
     /**
+     * Configures the view to be in the given state. This method is an internal method used for parsing the native integer value used in attributes in
+     * XML
+     *
+     * @see ContentState
+     * @see #setState(ContentState)
+     * @param nativeInt
+     */
+    private void setState(int nativeInt) {
+        setState(ContentState.getState(nativeInt));
+    }
+
+    /**
      * Configures the view to be in the given state, hiding and showing internally maintained-views as needed
      *
      * @param state
@@ -207,18 +219,6 @@ public class MultiStateView extends FrameLayout {
 
             newStateView.setVisibility(View.VISIBLE);
         }
-    }
-
-    /**
-     * Configures the view to be in the given state. This method is an internal method used for parsing the native integer value used in attributes in
-     * XML
-     *
-     * @see ContentState
-     * @see #setState(ContentState)
-     * @param nativeInt
-     */
-    private void setState(int nativeInt) {
-        setState(ContentState.getState(nativeInt));
     }
 
     /**
@@ -583,6 +583,7 @@ public class MultiStateView extends FrameLayout {
             networkErrorTitleString = in.readString();
             generalErrorTitleString = in.readString();
             tapToRetryString = in.readString();
+            emptyLayoutResId = in.readInt();
             emptyString = in.readString();
             state = ContentState.valueOf(in.readString());
         }
@@ -599,6 +600,7 @@ public class MultiStateView extends FrameLayout {
             dest.writeString(networkErrorTitleString);
             dest.writeString(generalErrorTitleString);
             dest.writeString(tapToRetryString);
+            dest.writeInt(emptyLayoutResId);
             dest.writeString(emptyString);
             dest.writeString(state.name());
         }
