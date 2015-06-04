@@ -24,6 +24,7 @@
         <attr name="msvErrorTitleUnknownStringId" format="string" />
         <attr name="msvErrorTitleNetworkStringId" format="string" />
         <attr name="msvErrorTapToRetryStringId" format="string" />
+        <attr name="msvEmptyStringId" format="string" />
     </declare-styleable>
 
 </resources>

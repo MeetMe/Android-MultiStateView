@@ -84,7 +84,7 @@ public class MultiStateView extends FrameLayout {
 
             setTapToRetryString(tmpString);
 
-            tmpString = a.getString(R.styleable.MultiStateView_msvEmptyLayout);
+            tmpString = a.getString(R.styleable.MultiStateView_msvEmptyStringId);
 
             if (tmpString == null) {
                 tmpString = context.getString(R.string.error_title_empty);
@@ -170,18 +170,6 @@ public class MultiStateView extends FrameLayout {
     }
 
     /**
-     * Configures the view to be in the given state. This method is an internal method used for parsing the native integer value used in attributes in
-     * XML
-     *
-     * @param nativeInt
-     * @see ContentState
-     * @see #setState(ContentState)
-     */
-    private void setState(int nativeInt) {
-        setState(ContentState.getState(nativeInt));
-    }
-
-    /**
      * Configures the view to be in the given state, hiding and showing internally maintained-views as needed
      *
      * @param state
@@ -219,6 +207,18 @@ public class MultiStateView extends FrameLayout {
 
             newStateView.setVisibility(View.VISIBLE);
         }
+    }
+
+    /**
+     * Configures the view to be in the given state. This method is an internal method used for parsing the native integer value used in attributes in
+     * XML
+     *
+     * @param nativeInt
+     * @see ContentState
+     * @see #setState(ContentState)
+     */
+    private void setState(int nativeInt) {
+        setState(ContentState.getState(nativeInt));
     }
 
     /**
