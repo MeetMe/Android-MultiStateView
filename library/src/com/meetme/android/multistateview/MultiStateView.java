@@ -160,6 +160,14 @@ public class MultiStateView extends FrameLayout {
 
     public void setEmptyString(String string) {
         mViewState.emptyString = string;
+
+        if (mEmptyView != null) {
+            TextView view = ((TextView) mEmptyView.findViewById(R.id.empty));
+
+            if (view != null) {
+                view.setText(string);
+            }
+        }
     }
 
     /**
@@ -167,6 +175,18 @@ public class MultiStateView extends FrameLayout {
      */
     public ContentState getState() {
         return mViewState.state != null ? mViewState.state : ContentState.CONTENT;
+    }
+
+    /**
+     * Configures the view to be in the given state. This method is an internal method used for parsing the native integer value used in attributes in
+     * XML
+     *
+     * @param nativeInt
+     * @see ContentState
+     * @see #setState(ContentState)
+     */
+    private void setState(int nativeInt) {
+        setState(ContentState.getState(nativeInt));
     }
 
     /**
@@ -207,18 +227,6 @@ public class MultiStateView extends FrameLayout {
 
             newStateView.setVisibility(View.VISIBLE);
         }
-    }
-
-    /**
-     * Configures the view to be in the given state. This method is an internal method used for parsing the native integer value used in attributes in
-     * XML
-     *
-     * @param nativeInt
-     * @see ContentState
-     * @see #setState(ContentState)
-     */
-    private void setState(int nativeInt) {
-        setState(ContentState.getState(nativeInt));
     }
 
     /**
