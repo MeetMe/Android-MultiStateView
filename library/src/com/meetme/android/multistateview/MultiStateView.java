@@ -31,6 +31,7 @@ public class MultiStateView extends FrameLayout {
     private View mNetworkErrorView;
     private View mGeneralErrorView;
     private OnClickListener mTapToRetryClickListener;
+    private View mEmptyView;
 
     public MultiStateView(Context context) {
         this(context, null);
@@ -109,16 +110,12 @@ public class MultiStateView extends FrameLayout {
         mViewState.generalErrorLayoutResId = resourceId;
     }
 
-    private void setNetworkErrorTitleString(String string) {
-        mViewState.networkErrorTitleString = string;
-    }
-
     public String getNetworkErrorTitleString() {
         return mViewState.networkErrorTitleString;
     }
 
-    private void setGeneralErrorTitleString(String string) {
-        mViewState.generalErrorTitleString = string;
+    private void setNetworkErrorTitleString(String string) {
+        mViewState.networkErrorTitleString = string;
     }
 
     public void setCustomErrorString(String string) {
@@ -137,12 +134,16 @@ public class MultiStateView extends FrameLayout {
         return mViewState.generalErrorTitleString;
     }
 
-    private void setTapToRetryString(String string) {
-        mViewState.tapToRetryString = string;
+    private void setGeneralErrorTitleString(String string) {
+        mViewState.generalErrorTitleString = string;
     }
 
     public String getTapToRetryString() {
         return mViewState.tapToRetryString;
+    }
+
+    private void setTapToRetryString(String string) {
+        mViewState.tapToRetryString = string;
     }
 
     public int getLoadingLayoutResourceId() {
@@ -153,24 +154,16 @@ public class MultiStateView extends FrameLayout {
         this.mViewState.loadingLayoutResId = loadingLayout;
     }
 
+    public void setEmptyLayoutResourceId(int emptyLayout) {
+        this.mViewState.emptyLayoutResId = emptyLayout;
+    }
+
     /**
      * @return the {@link ContentState} the view is currently in
      */
     @NonNull
     public ContentState getState() {
         return mViewState.state != null ? mViewState.state : ContentState.CONTENT;
-    }
-
-    /**
-     * Configures the view to be in the given state. This method is an internal method used for parsing the native integer value used in attributes
-     * in XML.
-     *
-     * @param nativeInt
-     * @see ContentState
-     * @see #setState(ContentState)
-     */
-    private void setState(int nativeInt) {
-        setState(ContentState.getState(nativeInt));
     }
 
     /**
@@ -237,6 +230,18 @@ public class MultiStateView extends FrameLayout {
         }
     }
 
+    /**
+     * Configures the view to be in the given state. This method is an internal method used for parsing the native integer value used in attributes
+     * in XML.
+     *
+     * @param nativeInt
+     * @see ContentState
+     * @see #setState(ContentState)
+     */
+    private void setState(int nativeInt) {
+        setState(ContentState.getState(nativeInt));
+    }
+
     /** Dump the current state of the view. Requires {@link BuildConfig#DEBUG}. */
     public void dumpState() {
         if (!BuildConfig.DEBUG) return;
@@ -285,6 +290,9 @@ public class MultiStateView extends FrameLayout {
 
             case LOADING:
                 return getLoadingView();
+
+            case EMPTY:
+                return getEmptyView();
 
             case CONTENT:
                 return getContentView();
@@ -348,6 +356,21 @@ public class MultiStateView extends FrameLayout {
 
         return mLoadingView;
     }
+
+    /**
+     * Builds the loading view if not currently built, and returns the view
+     */
+    @NonNull
+    public View getEmptyView() {
+        if (mEmptyView == null) {
+            mEmptyView = View.inflate(getContext(), mViewState.emptyLayoutResId, null);
+
+            addView(mEmptyView);
+        }
+
+        return mEmptyView;
+    }
+
 
     public void setOnTapToRetryClickListener(View.OnClickListener listener) {
         mTapToRetryClickListener = listener;
@@ -428,6 +451,7 @@ public class MultiStateView extends FrameLayout {
         setGeneralErrorLayoutResourceId(state.generalErrorLayoutResId);
         setNetworkErrorLayoutResourceId(state.networkErrorLayoutResId);
         setLoadingLayoutResourceId(state.loadingLayoutResId);
+        setEmptyLayoutResourceId(state.emptyLayoutResId);
         setCustomErrorString(state.customErrorString);
     }
 
@@ -485,33 +509,44 @@ public class MultiStateView extends FrameLayout {
          *
          * @see R.attr#msvState
          */
-        CONTENT(0x00),
+        LOADING(0x00),
         /**
          * Used to indicate that the Loading indication should be displayed to the user
          *
          * @see R.attr#msvState
          */
-        LOADING(0x01),
+        EMPTY(0x01),
+        /**
+         * Used to indicate that the Loading indication should be displayed to the user
+         *
+         * @see R.attr#msvState
+         */
+        CONTENT(0x02),
         /**
          * Used to indicate that the Network Error indication should be displayed to the user
          *
          * @see R.attr#msvState
          */
-        ERROR_NETWORK(0x02),
+        ERROR_NETWORK(0x03),
         /**
          * Used to indicate that the Unknown Error indication should be displayed to the user
          *
          * @see R.attr#msvState
          */
-        ERROR_GENERAL(0x03);
+        ERROR_GENERAL(0x04);
 
-        public final int nativeInt;
         private static final SparseArray<ContentState> sStates = new SparseArray<>();
 
         static {
             for (ContentState scaleType : values()) {
                 sStates.put(scaleType.nativeInt, scaleType);
             }
+        }
+
+        public final int nativeInt;
+
+        ContentState(int nativeValue) {
+            this.nativeInt = nativeValue;
         }
 
         public static ContentState getState(int nativeInt) {
@@ -521,13 +556,18 @@ public class MultiStateView extends FrameLayout {
 
             return null;
         }
-
-        ContentState(int nativeValue) {
-            this.nativeInt = nativeValue;
-        }
     }
 
     public static class SavedState extends View.BaseSavedState {
+        public static final Parcelable.Creator<SavedState> CREATOR = new Parcelable.Creator<SavedState>() {
+            public SavedState createFromParcel(Parcel in) {
+                return new SavedState(in);
+            }
+
+            public SavedState[] newArray(int size) {
+                return new SavedState[size];
+            }
+        };
         MultiStateViewData state;
 
         public SavedState(Parcelable superState) {
@@ -544,21 +584,21 @@ public class MultiStateView extends FrameLayout {
             super.writeToParcel(out, flags);
             out.writeParcelable(state, flags);
         }
-
-        public static final Parcelable.Creator<SavedState> CREATOR = new Parcelable.Creator<SavedState>() {
-            public SavedState createFromParcel(Parcel in) {
-                return new SavedState(in);
-            }
-
-            public SavedState[] newArray(int size) {
-                return new SavedState[size];
-            }
-        };
     }
 
     public static class MultiStateViewData implements Parcelable {
+        public static final Parcelable.Creator<MultiStateViewData> CREATOR = new Parcelable.Creator<MultiStateViewData>() {
+            public MultiStateViewData createFromParcel(Parcel in) {
+                return new MultiStateViewData(in);
+            }
+
+            public MultiStateViewData[] newArray(int size) {
+                return new MultiStateViewData[size];
+            }
+        };
         public String customErrorString;
         public int loadingLayoutResId;
+        public int emptyLayoutResId;
         public int generalErrorLayoutResId;
         public int networkErrorLayoutResId;
         public String networkErrorTitleString;
@@ -573,6 +613,7 @@ public class MultiStateView extends FrameLayout {
         private MultiStateViewData(Parcel in) {
             customErrorString = in.readString();
             loadingLayoutResId = in.readInt();
+            emptyLayoutResId = in.readInt();
             generalErrorLayoutResId = in.readInt();
             networkErrorLayoutResId = in.readInt();
             networkErrorTitleString = in.readString();
@@ -588,6 +629,7 @@ public class MultiStateView extends FrameLayout {
         public void writeToParcel(Parcel dest, int flags) {
             dest.writeString(customErrorString);
             dest.writeInt(loadingLayoutResId);
+            dest.writeInt(emptyLayoutResId);
             dest.writeInt(generalErrorLayoutResId);
             dest.writeInt(networkErrorLayoutResId);
             dest.writeString(networkErrorTitleString);
@@ -595,16 +637,6 @@ public class MultiStateView extends FrameLayout {
             dest.writeString(tapToRetryString);
             dest.writeString(state.name());
         }
-
-        public static final Parcelable.Creator<MultiStateViewData> CREATOR = new Parcelable.Creator<MultiStateViewData>() {
-            public MultiStateViewData createFromParcel(Parcel in) {
-                return new MultiStateViewData(in);
-            }
-
-            public MultiStateViewData[] newArray(int size) {
-                return new MultiStateViewData[size];
-            }
-        };
 
         @Override
         public String toString() {
