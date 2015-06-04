@@ -24,3 +24,8 @@ android {
         }
     }
 }
+
+dependencies {
+    compile 'com.android.support:support-annotations:22.2.0'
+}
+
