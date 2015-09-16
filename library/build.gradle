@@ -1,10 +1,15 @@
-apply plugin: 'android-library'
+apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 19
-    buildToolsVersion "19.1.0"
+    buildToolsVersion "23.0.1"
+    compileSdkVersion 23
     // Allow publishing both debug and release variants
     publishNonDefault true
+
+    defaultConfig {
+        targetSdkVersion 22
+        minSdkVersion 3
+    }
 
     sourceSets {
         main {
